@@ -11,14 +11,14 @@
 </div>
 
  
-Welcome to my **portfolio website**! This site showcases my skills, experience, education, projects, and how to get in touch with me. It's built with **React** and **Vite** for a fast, modern web experience. You can explore my work, learn about my journey, and contact me directly.
+Welcome to my **portfolio website**! This site showcases my skills, experience, education, projects, and how to get in touch with me. It's built with **React** for a fast, modern web experience. You can explore my work, learn about my journey, and contact me directly.
 
 ---
 
 ## Live Preview
 
 Check out the live preview of the portfolio website here:  
-[**Live Demo**](https://essaehaan.vercel.app/)
+[**Live Demo**](https://essaehaan.netlify.app/)
 ---
 ### 🎯 Project Structure
 ```bash
@@ -113,7 +113,7 @@ The portfolio website consists of the following sections:
 - **Styling:** Tailwind CSS
 - **Animations:** Framer Motion
 - **Icons:** React Icons
-- **Deployment:** Vercel
+- **Deployment:** Netlify
 
 ---
 
@@ -145,12 +145,12 @@ You will need to download **Git** and **Node** to run this project.
 2. After forking, open your terminal and run the following commands to clone the repo:
 
   ```bash
-  git clone https://github.com/seraprogrammer/portfolio.git
+  git clone https://github.com/essaehaan/Profile
   ```
 Navigate to the Project Directory 📂
 Once the repository is cloned, change your directory to the project folder:
 ```bash
-cd portfolio
+cd Profile
 ```
 
 Install Dependencies ⚙️
