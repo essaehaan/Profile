@@ -8,6 +8,7 @@ import {
   FaCode,
   FaEnvelope,
   FaBars,
+  FaChalkboardTeacher,
 } from "react-icons/fa";
 import { Link, useLocation } from "react-router-dom";
 
@@ -42,6 +43,7 @@ export default function Header() {
       path: "/education",
     },
     { id: "projects", icon: FaLaptopCode, text: "Projects", path: "/projects" },
+    { id: "courses", icon: FaChalkboardTeacher, text: "Courses", path: "/courses" },
     { id: "contact", icon: FaEnvelope, text: "Contact", path: "/contact" },
   ];
 

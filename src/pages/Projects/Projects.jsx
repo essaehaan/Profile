@@ -4,7 +4,7 @@ import encesWebSite from "../../assets/images/encesWebSite.png";
 import inTouchBed from "../../assets/images/inTouchBed.png";
 import essaProfile from "../../assets/images/essaProfile.png";
 import chapron from "../../assets/images/chapron.png";
-import Sos from "../../assets/images/activeSoS.png";
+import Sos from "../../assets/images/activeSos.png";
 import InstaCan from "../../assets/images/instaCan.png";
 import GuideMe from "../../assets/images/guide_me.png";
 import MemoryMag from "../../assets/images/memoryMag.png";
