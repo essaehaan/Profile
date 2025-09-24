@@ -10,6 +10,10 @@ import Education from "./pages/Education/Education";
 import Footer from "./pages/Footer/Footer";
 import Courses from "./pages/Courses/Courses";
 import CourseDetail from "./pages/Courses/CourseDetail";
+import Login from "./pages/Auth/Login";
+import Signup from "./pages/Auth/Signup";
+import ForgotPassword from "./pages/Auth/ForgotPassword";
+import ResetPassword from "./pages/Auth/ResetPassword";
 
 import { Route, Routes } from "react-router-dom";
 
@@ -41,6 +45,10 @@ export default function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/course/:id" element={<CourseDetail />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
           </Routes>
         )}
       </main>

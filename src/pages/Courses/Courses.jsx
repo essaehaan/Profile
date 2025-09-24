@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import './Courses.css';
 import Webplanet from "../../assets/images/webplanet.png";
 import MedicalAsth from "../../assets/images/madicalAusthetic.png";
 import ScrabbleApp from "../../assets/images/scribbleapp.png";
 import { Meteors } from '../../components/ui/meteors';
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { apiFetch, getToken, formatPrice, API_BASE_URL } from '../../lib/api';
 
 const CourseCard = ({ title, description, image, price, id }) => (
   <Link to={`/course/${id}`} state={{ course: { title, description, image, price, id } }}>
@@ -40,48 +41,152 @@ const CourseCard = ({ title, description, image, price, id }) => (
   </Link>
 );
 
-const courses = [
-  {
-    id: 1,
-    title: 'React for Beginners',
-    description: 'Learn the fundamentals of React and build your first web application.',
-    image: Webplanet,
-    price: '$49',
-  },
-  {
-    id: 2,
-    title: 'Advanced JavaScript',
-    description: 'Deep dive into advanced JavaScript concepts and techniques.',
-    image: MedicalAsth,
-    price: '$99',
-  },
-  {
-    id: 3,
-    title: 'UI/UX Design Principles',
-    description: 'Learn the principles of UI/UX design and create beautiful and intuitive interfaces.',
-    image: ScrabbleApp,
-    price: '$79',
-  },
-  {
-    id: 4,
-    title: 'UI/UX Design Principles',
-    description: 'Learn the principles of UI/UX design and create beautiful and intuitive interfaces.',
-    image: ScrabbleApp,
-    price: '$79',
-  },
+const fallbackCourses = [
+  { id: 1, title: 'React for Beginners', description: 'Learn the fundamentals of React and build your first web application.', image: Webplanet, price: '$49' },
+  { id: 2, title: 'Advanced JavaScript', description: 'Deep dive into advanced JavaScript concepts and techniques.', image: MedicalAsth, price: '$99' },
+  { id: 3, title: 'UI/UX Design Principles', description: 'Learn the principles of UI/UX design and create beautiful and intuitive interfaces.', image: ScrabbleApp, price: '$79' },
 ];
 
+function parseRoleFromToken(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1] || ''));
+    return payload?.role;
+  } catch {
+    return undefined;
+  }
+}
+
 const Courses = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState([]);
+  const [error, setError] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [newCourse, setNewCourse] = useState({ title: '', description: '', price: '' });
+
+  const token = getToken();
+  const role = parseRoleFromToken(token);
+  const isAdmin = role === 'admin';
+
+  useEffect(() => {
+    const t = getToken();
+    if (!t) {
+      const params = new URLSearchParams();
+      params.set('from', '/courses');
+      params.set('notice', 'Please login to view courses');
+      navigate(`/login?${params.toString()}`);
+      return;
+    }
+
+    async function load() {
+      try {
+        const data = await apiFetch('/courses');
+        const mapped = data.map((c) => ({
+          id: c.id,
+          title: c.title,
+          description: c.description,
+          image: Webplanet,
+          price: formatPrice(c.price),
+        }));
+        setItems(mapped);
+      } catch (e) {
+        if (e.message === 'Unauthorized') {
+          const params = new URLSearchParams();
+          params.set('from', '/courses');
+          params.set('notice', 'Session expired. Please login again');
+          navigate(`/login?${params.toString()}`);
+          return;
+        }
+        setError('Failed to load courses');
+        setItems(fallbackCourses);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, [navigate, location.pathname]);
+
+  async function createCourse(e) {
+    e.preventDefault();
+    setCreating(true);
+    setError('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/courses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: newCourse.title,
+          description: newCourse.description,
+          price: Number(newCourse.price || 0),
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const created = await res.json();
+      setItems([{ id: created.id, title: created.title, description: created.description, image: Webplanet, price: formatPrice(created.price) }, ...items]);
+      setNewCourse({ title: '', description: '', price: '' });
+    } catch (err) {
+      setError(err.message || 'Create failed');
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function removeCourse(id) {
+    setError('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/courses/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setItems(items.filter(i => i.id !== id));
+    } catch (err) {
+      setError(err.message || 'Delete failed');
+    }
+  }
+
   return (
     <div className="skills-container" style={{ padding: "4%", }}>
       <div style={{ position: 'relative', textAlign: 'center', marginBottom: '2rem' }}>
         <Meteors number={20} />
       </div>
-      <div className="skills-grid">
-        {courses.map((course, index) => (
-          <CourseCard key={index} {...course} />
-        ))}
-      </div>
+
+      {isAdmin && (
+        <div className="bg-gray-900/80 rounded-lg border border-gray-800/50 p-6 mb-8">
+          <h2 className="text-xl font-semibold text-white mb-4">Admin: Create Course</h2>
+          {error && <div className="mb-3 text-red-400">{error}</div>}
+          <form onSubmit={createCourse} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input placeholder="Title" className="border border-gray-700 rounded px-3 py-2 bg-transparent text-gray-100" value={newCourse.title} onChange={e => setNewCourse({ ...newCourse, title: e.target.value })} />
+            <input placeholder="Price" className="border border-gray-700 rounded px-3 py-2 bg-transparent text-gray-100" value={newCourse.price} onChange={e => setNewCourse({ ...newCourse, price: e.target.value })} />
+            <input placeholder="Description" className="border border-gray-700 rounded px-3 py-2 bg-transparent text-gray-100 md:col-span-3" value={newCourse.description} onChange={e => setNewCourse({ ...newCourse, description: e.target.value })} />
+            <div className="md:col-span-3 flex gap-2">
+              <button disabled={creating} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded">{creating ? 'Creating...' : 'Create'}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="text-center text-gray-300">Loading courses...</div>
+      ) : (
+        <div className="skills-grid">
+          {items.map((course, index) => (
+            <div key={index}>
+              <CourseCard {...course} />
+              {isAdmin && (
+                <div className="mt-2 flex gap-2">
+                  <button onClick={() => removeCourse(course.id)} className="text-sm bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded">Delete</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
