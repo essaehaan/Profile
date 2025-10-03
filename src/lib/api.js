@@ -69,9 +69,57 @@ export async function resetPassword({ token, password }) {
 	return res.json();
 }
 
+export function logout() {
+	clearToken();
+	// Optionally navigate to login page
+	if (typeof window !== 'undefined') {
+		window.location.href = '/login';
+	}
+}
+
+export function getCurrentUser() {
+	const token = getToken();
+	if (!token) return null;
+	
+	try {
+		const payload = JSON.parse(atob(token.split('.')[1] || ''));
+		return {
+			id: payload.id,
+			email: payload.email,
+			role: payload.role,
+			name: payload.name || payload.email
+		};
+	} catch {
+		return null;
+	}
+}
+
+export function isAuthenticated() {
+	const token = getToken();
+	if (!token) return false;
+	
+	try {
+		const payload = JSON.parse(atob(token.split('.')[1] || ''));
+		// Check if token is expired
+		if (payload.exp && payload.exp * 1000 < Date.now()) {
+			clearToken();
+			return false;
+		}
+		return true;
+	} catch {
+		clearToken();
+		return false;
+	}
+}
+
+export function isAdmin() {
+	const user = getCurrentUser();
+	return user?.role === 'admin';
+}
+
 export function formatPrice(value) {
 	if (value == null) return '';
 	const num = typeof value === 'string' ? Number(value) : value;
 	if (Number.isNaN(num)) return '';
 	return `$${num.toFixed(2)}`;
-} 
+}

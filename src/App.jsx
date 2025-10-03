@@ -14,6 +14,7 @@ import Login from "./pages/Auth/Login";
 import Signup from "./pages/Auth/Signup";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
 import ResetPassword from "./pages/Auth/ResetPassword";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
 
 import { Route, Routes } from "react-router-dom";
 
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
         )}
       </main>

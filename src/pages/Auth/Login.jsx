@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { loginRequest, setToken } from '../../lib/api';
+import { loginRequest, setToken, getCurrentUser, isAdmin } from '../../lib/api';
 import { Meteors } from '../../components/ui/meteors';
 
 export default function Login() {
@@ -27,7 +27,19 @@ export default function Login() {
 		try {
 			const data = await loginRequest({ email, password });
 			setToken(data.access_token);
-			navigate(from);
+			
+			// Check if user is admin after setting token
+			const userIsAdmin = isAdmin();
+			const user = getCurrentUser();
+			
+			if (userIsAdmin) {
+				// Redirect admin to dashboard
+				navigate('/admin');
+			} else {
+				// Redirect regular user to requested page or courses
+				const redirectTo = from === '/admin' ? '/courses' : from;
+				navigate(redirectTo);
+			}
 		} catch (err) {
 			setError(err.message || 'Login failed');
 		} finally {
