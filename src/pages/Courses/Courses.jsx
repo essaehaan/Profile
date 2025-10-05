@@ -4,22 +4,49 @@ import Webplanet from "../../assets/images/webplanet.png";
 import MedicalAsth from "../../assets/images/madicalAusthetic.png";
 import ScrabbleApp from "../../assets/images/scribbleapp.png";
 import { Meteors } from '../../components/ui/meteors';
+import EditCourseModal from '../../components/ui/EditCourseModal';
 
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { apiFetch, getToken, formatPrice, API_BASE_URL } from '../../lib/api';
 
-const CourseCard = ({ title, description, image, price, id }) => (
-  <Link to={`/course/${id}`} state={{ course: { title, description, image, price, id } }}>
-    <div className="group relative overflow-hidden transform hover:-translate-y-2 transition-all duration-300">
-      <div className="absolute inset-0 backdrop-blur-lg bg-white/5 rounded-lg" />
-      <div className="absolute -inset-[2px] bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 rounded-lg opacity-0 group-hover:opacity-100 animate-gradient-xy transition-all duration-500" />
-      <div className="relative bg-gray-900/90 rounded-lg p-8 h-full border border-gray-800/50 shadow-xl backdrop-blur-xl">
-        <div className="relative mb-6">
-          <img src={image} alt={title} className="w-full h-40 object-cover rounded-lg" />
-          <div className="absolute top-2 right-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-            {price}
-          </div>
+const CourseCard = ({ title, description, image, price, id, isAdmin, onEdit, onDelete }) => (
+  <div className="group relative overflow-hidden transform hover:-translate-y-2 transition-all duration-300">
+    <div className="absolute inset-0 backdrop-blur-lg bg-white/5 rounded-lg" />
+    <div className="absolute -inset-[2px] bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 rounded-lg opacity-0 group-hover:opacity-100 animate-gradient-xy transition-all duration-500" />
+    <div className="relative bg-gray-900/90 rounded-lg p-8 h-full border border-gray-800/50 shadow-xl backdrop-blur-xl">
+      <div className="relative mb-6">
+        <img src={image} alt={title} className="w-full h-40 object-cover rounded-lg" />
+        <div className="absolute top-2 right-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+          {price}
         </div>
+        {isAdmin && (
+          <div className="absolute top-2 left-2 flex gap-2">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onEdit(id);
+              }}
+              className="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-full transition-colors"
+              title="Edit Course"
+            >
+              ✏️
+            </button>
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDelete(id);
+              }}
+              className="bg-red-600 hover:bg-red-500 text-white p-2 rounded-full transition-colors"
+              title="Delete Course"
+            >
+              🗑️
+            </button>
+          </div>
+        )}
+      </div>
+      <Link to={`/course/${id}`} state={{ course: { title, description, image, price, id } }}>
         <div className="space-y-3">
           <h3 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
             {title}
@@ -28,17 +55,17 @@ const CourseCard = ({ title, description, image, price, id }) => (
             {description}
           </p>
         </div>
-        <div className="absolute top-4 right-4 w-20 h-20">
-          <div className="absolute top-0 right-0 w-6 h-[2px] bg-cyan-500/50" />
-          <div className="absolute top-0 right-0 w-[2px] h-6 bg-cyan-500/50" />
-        </div>
-        <div className="absolute bottom-4 left-4 w-20 h-20">
-          <div className="absolute bottom-0 left-0 w-6 h-[2px] bg-purple-500/50" />
-          <div className="absolute bottom-0 left-0 w-[2px] h-6 bg-purple-500/50" />
-        </div>
+      </Link>
+      <div className="absolute top-4 right-4 w-20 h-20">
+        <div className="absolute top-0 right-0 w-6 h-[2px] bg-cyan-500/50" />
+        <div className="absolute top-0 right-0 w-[2px] h-6 bg-cyan-500/50" />
+      </div>
+      <div className="absolute bottom-4 left-4 w-20 h-20">
+        <div className="absolute bottom-0 left-0 w-6 h-[2px] bg-purple-500/50" />
+        <div className="absolute bottom-0 left-0 w-[2px] h-6 bg-purple-500/50" />
       </div>
     </div>
-  </Link>
+  </div>
 );
 
 const fallbackCourses = [
@@ -64,6 +91,8 @@ const Courses = () => {
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
   const [newCourse, setNewCourse] = useState({ title: '', description: '', price: '' });
+  const [editingCourse, setEditingCourse] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const token = getToken();
   const role = parseRoleFromToken(token);
@@ -150,6 +179,56 @@ const Courses = () => {
     }
   }
 
+  const handleEditCourse = async (courseId) => {
+    try {
+      console.log('Fetching course with ID:', courseId);
+      console.log('API URL:', `${API_BASE_URL}/courses/${courseId}`);
+      console.log('Token exists:', !!token);
+      
+      const res = await fetch(`${API_BASE_URL}/courses/${courseId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      console.log('Response status:', res.status);
+      console.log('Response headers:', Object.fromEntries(res.headers.entries()));
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('API Error:', errorText);
+        throw new Error(errorText);
+      }
+      
+      const course = await res.json();
+      console.log('Course data:', course);
+      setEditingCourse(course);
+      setShowEditModal(true);
+    } catch (err) {
+      console.error('Edit course error:', err);
+      setError(err.message || 'Failed to load course details');
+    }
+  };
+
+  const handleCourseUpdated = (updatedCourse) => {
+    setItems(items.map(item => 
+      item.id === updatedCourse.id 
+        ? { 
+            ...item, 
+            title: updatedCourse.title, 
+            description: updatedCourse.description, 
+            price: formatPrice(updatedCourse.price),
+            image: updatedCourse.picture ? `${API_BASE_URL}${updatedCourse.picture}` : item.image
+          }
+        : item
+    ));
+    setShowEditModal(false);
+    setEditingCourse(null);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditingCourse(null);
+  };
+
   return (
     <div className="skills-container" style={{ padding: "4%", }}>
       <div style={{ position: 'relative', textAlign: 'center', marginBottom: '2rem' }}>
@@ -176,16 +255,23 @@ const Courses = () => {
       ) : (
         <div className="skills-grid">
           {items.map((course, index) => (
-            <div key={index}>
-              <CourseCard {...course} />
-              {isAdmin && (
-                <div className="mt-2 flex gap-2">
-                  <button onClick={() => removeCourse(course.id)} className="text-sm bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded">Delete</button>
-                </div>
-              )}
-            </div>
+            <CourseCard 
+              key={index}
+              {...course} 
+              isAdmin={isAdmin}
+              onEdit={handleEditCourse}
+              onDelete={removeCourse}
+            />
           ))}
         </div>
+      )}
+
+      {showEditModal && editingCourse && (
+        <EditCourseModal
+          course={editingCourse}
+          onClose={handleCloseEditModal}
+          onCourseUpdated={handleCourseUpdated}
+        />
       )}
     </div>
   );

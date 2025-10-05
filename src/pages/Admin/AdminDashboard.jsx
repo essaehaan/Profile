@@ -10,6 +10,7 @@ import {
   formatPrice 
 } from '../../lib/api';
 import { Meteors } from '../../components/ui/meteors';
+import EditCourseModal from '../../components/ui/EditCourseModal';
 import { 
   FaUsers, 
   FaBook, 
@@ -46,6 +47,8 @@ const AdminDashboard = () => {
     image: null
   });
   const [imagePreview, setImagePreview] = useState(null);
+  const [editingCourse, setEditingCourse] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Check authentication and admin role
   useEffect(() => {
@@ -190,7 +193,7 @@ const AdminDashboard = () => {
           console.log(`  ${pair[0]}: ${pair[1]} (type: ${typeof pair[1]})`);
         }
         
-        response = await fetch(`${API_BASE_URL}/courses`, {
+        response = await fetch(`${API_BASE_URL}/courses/with-image`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -226,6 +229,7 @@ const AdminDashboard = () => {
         
         try {
           const errorData = JSON.parse(errorText);
+          console.error('Parsed error data:', errorData);
           if (errorData.message && Array.isArray(errorData.message)) {
             throw new Error(errorData.message.join(', '));
           } else if (errorData.message) {
@@ -234,6 +238,7 @@ const AdminDashboard = () => {
             throw new Error(errorText || 'Failed to create course');
           }
         } catch (parseError) {
+          console.error('Error parsing response:', parseError);
           throw new Error(errorText || 'Failed to create course');
         }
       }
@@ -280,6 +285,41 @@ const AdminDashboard = () => {
     } catch (err) {
       setError('Failed to delete course');
     }
+  };
+
+  const handleEditCourse = async (courseId) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/courses/${courseId}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const course = await res.json();
+      setEditingCourse(course);
+      setShowEditModal(true);
+    } catch (err) {
+      setError(err.message || 'Failed to load course details');
+    }
+  };
+
+  const handleCourseUpdated = (updatedCourse) => {
+    setCourses(courses.map(course => 
+      course.id === updatedCourse.id 
+        ? { 
+            ...course, 
+            title: updatedCourse.title, 
+            description: updatedCourse.description, 
+            price: updatedCourse.price,
+            picture: updatedCourse.picture
+          }
+        : course
+    ));
+    setShowEditModal(false);
+    setEditingCourse(null);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditingCourse(null);
   };
 
   if (loading) {
@@ -434,7 +474,7 @@ const AdminDashboard = () => {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button 
-                          onClick={() => navigate(`/course/${course.id}`)}
+                          onClick={() => handleEditCourse(course.id)}
                           className="p-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
                           title="Edit Course"
                         >
@@ -612,6 +652,15 @@ const AdminDashboard = () => {
               </form>
             </div>
           </div>
+        )}
+
+        {/* Edit Course Modal */}
+        {showEditModal && editingCourse && (
+          <EditCourseModal
+            course={editingCourse}
+            onClose={handleCloseEditModal}
+            onCourseUpdated={handleCourseUpdated}
+          />
         )}
       </div>
     </div>
